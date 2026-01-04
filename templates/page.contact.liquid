@@ -1,0 +1,92 @@
+{% comment %}
+  Contact page template
+{% endcomment %}
+
+<section class="page-section">
+  <h1 class="section-title">Contact Us</h1>
+  
+  <div class="section-content text-center mb-lg">
+    <p>Have a question or want to collaborate? We'd love to hear from you!</p>
+  </div>
+  
+  <form 
+    action="{{ routes.root_url }}contact#contact_form" 
+    method="post" 
+    accept-charset="UTF-8"
+    class="contact-form"
+    id="contact_form"
+  >
+    {%- form 'contact' -%}
+      {%- if form.posted_successfully? -%}
+        <div style="background-color: rgba(0, 255, 0, 0.1); border: 2px solid rgba(0, 255, 0, 0.5); padding: 1rem; margin-bottom: 1rem; text-align: center; box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);">
+          Thank you for your message! We'll get back to you soon.
+        </div>
+      {%- endif -%}
+      
+      {%- if form.errors -%}
+        <div style="background-color: rgba(255, 0, 0, 0.1); border: 2px solid rgba(255, 0, 0, 0.5); padding: 1rem; margin-bottom: 1rem; box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);">
+          <p>Please correct the following errors:</p>
+          <ul>
+            {%- for field in form.errors -%}
+              <li>{{ form.errors[field] }}</li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+      
+      <div class="form-group">
+        <label for="ContactForm-name" class="form-label">Name</label>
+        <input 
+          type="text" 
+          id="ContactForm-name"
+          name="contact[name]"
+          class="form-input"
+          required
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="ContactForm-email" class="form-label">Email</label>
+        <input 
+          type="email" 
+          id="ContactForm-email"
+          name="contact[email]"
+          class="form-input"
+          required
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="ContactForm-phone" class="form-label">Phone (Optional)</label>
+        <input 
+          type="tel" 
+          id="ContactForm-phone"
+          name="contact[phone]"
+          class="form-input"
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="ContactForm-message" class="form-label">Message</label>
+        <textarea 
+          id="ContactForm-message"
+          name="contact[body]"
+          class="form-textarea"
+          required
+        ></textarea>
+      </div>
+      
+      <button type="submit" class="submit-button">Send Message</button>
+    {%- endform -%}
+  </form>
+  
+  <div class="text-center mt-lg">
+    <h2 style="font-family: var(--font-manga); font-size: 1.8rem; margin-bottom: 1rem; text-shadow: 0 0 10px var(--glow-primary);">
+      Follow Us
+    </h2>
+    <p style="color: var(--text-secondary);">
+      Stay connected with us on social media for the latest updates and new releases.
+    </p>
+  </div>
+</section>
+

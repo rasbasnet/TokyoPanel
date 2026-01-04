@@ -1,0 +1,17 @@
+# Shopify Theme
+config/settings_data.json
+*.log
+.DS_Store
+node_modules/
+.shopify/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+

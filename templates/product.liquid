@@ -1,0 +1,198 @@
+{% comment %}
+  Product page template with Shopify integration
+{% endcomment %}
+
+<div class="product-page">
+  <div class="product-detail">
+    <div class="product-detail-image-wrapper">
+      {%- if product.featured_image -%}
+        <img 
+          src="{{ product.featured_image | image_url: width: 1200 }}"
+          alt="{{ product.featured_image.alt | escape }}"
+          class="product-detail-image"
+          id="ProductImage"
+        >
+      {%- endif -%}
+      
+      {%- if product.images.size > 1 -%}
+        <div class="product-thumbnails" style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+          {%- for image in product.images -%}
+            <img 
+              src="{{ image | image_url: width: 150 }}"
+              alt="{{ image.alt | escape }}"
+              class="product-thumbnail"
+              style="width: 100px; height: 100px; object-fit: cover; border: 2px solid var(--border-glow); cursor: pointer; transition: all 0.3s ease;"
+              onclick="changeProductImage('{{ image | image_url: width: 1200 }}')"
+              onmouseover="this.style.borderColor='var(--glow-primary)'; this.style.boxShadow='0 0 10px var(--accent-glow)'"
+              onmouseout="this.style.borderColor='var(--border-glow)'; this.style.boxShadow='none'"
+            >
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+    
+    <div class="product-detail-info">
+      <h1 class="product-detail-title">{{ product.title }}</h1>
+      
+      {%- if product.description != blank -%}
+        <div class="product-description">
+          {{ product.description }}
+        </div>
+      {%- endif -%}
+      
+      <form action="{{ routes.cart_add_url }}" method="post" enctype="multipart/form-data" id="product-form">
+        <input type="hidden" name="id" id="product-variant-id" value="{{ product.selected_or_first_available_variant.id }}">
+        
+        {%- unless product.has_only_default_variant -%}
+          {%- for option in product.options_with_values -%}
+            <div class="variant-selector">
+              <label class="variant-label" for="Option-{{ forloop.index }}">
+                {{ option.name }}
+              </label>
+              <select 
+                id="Option-{{ forloop.index }}"
+                class="variant-select"
+                data-option-index="{{ forloop.index0 }}"
+                onchange="updateVariantSelection()"
+              >
+                {%- for value in option.values -%}
+                  <option value="{{ value | escape }}" {% if option.selected_value == value %}selected{% endif %}>
+                    {{ value }}
+                  </option>
+                {%- endfor -%}
+              </select>
+            </div>
+          {%- endfor -%}
+        {%- endunless -%}
+        
+        <div class="quantity-selector" style="margin-bottom: 1rem;">
+          <label class="variant-label" for="Quantity">Quantity</label>
+          <input 
+            type="number" 
+            id="Quantity" 
+            name="quantity" 
+            value="1" 
+            min="1"
+            class="form-input"
+            style="max-width: 100px;"
+          >
+        </div>
+        
+        <div class="product-price-display" id="product-price" style="margin-bottom: 1rem;">
+          <span class="product-detail-price">{{ product.selected_or_first_available_variant.price | money }}</span>
+        </div>
+        
+        <button 
+          type="submit" 
+          class="add-to-cart-btn"
+          id="AddToCart"
+          {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}
+        >
+          {%- if product.selected_or_first_available_variant.available -%}
+            Add to Cart
+          {%- else -%}
+            Sold Out
+          {%- endif -%}
+        </button>
+      </form>
+      
+      <script>
+        const productVariants = [
+          {%- for variant in product.variants -%}
+            {
+              id: {{ variant.id }},
+              title: {{ variant.title | json }},
+              price: {{ variant.price }},
+              available: {{ variant.available | json }},
+              option1: {{ variant.option1 | json }},
+              option2: {{ variant.option2 | json }},
+              option3: {{ variant.option3 | json }}
+            }{% unless forloop.last %},{% endunless %}
+          {%- endfor -%}
+        ];
+      </script>
+    </div>
+  </div>
+</div>
+
+<script>
+  function changeProductImage(imageUrl) {
+    const productImage = document.getElementById('ProductImage');
+    if (productImage) {
+      productImage.src = imageUrl;
+    }
+  }
+  
+  function updateVariantSelection() {
+    const selects = document.querySelectorAll('.variant-select');
+    const selectedOptions = {};
+    
+    selects.forEach(select => {
+      const optionIndex = select.dataset.optionIndex;
+      selectedOptions[`option${parseInt(optionIndex) + 1}`] = select.value;
+    });
+    
+    // Find matching variant
+    const selectedVariant = productVariants.find(variant => {
+      return (
+        (!selectedOptions.option1 || variant.option1 === selectedOptions.option1) &&
+        (!selectedOptions.option2 || variant.option2 === selectedOptions.option2) &&
+        (!selectedOptions.option3 || variant.option3 === selectedOptions.option3)
+      );
+    });
+    
+    if (selectedVariant) {
+      document.getElementById('product-variant-id').value = selectedVariant.id;
+      const priceElement = document.querySelector('#product-price .product-detail-price');
+      if (priceElement) {
+        priceElement.textContent = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD'
+        }).format(selectedVariant.price / 100);
+      }
+      
+      const addToCartBtn = document.getElementById('AddToCart');
+      if (addToCartBtn) {
+        if (selectedVariant.available) {
+          addToCartBtn.disabled = false;
+          addToCartBtn.textContent = 'Add to Cart';
+        } else {
+          addToCartBtn.disabled = true;
+          addToCartBtn.textContent = 'Sold Out';
+        }
+      }
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    const productForm = document.getElementById('product-form');
+    if (productForm) {
+      productForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        fetch(window.routes.cart_add_url, {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            if (typeof showCartNotification === 'function') {
+              showCartNotification('Item added to cart!');
+            }
+            // Optionally redirect to cart
+            // window.location.href = window.routes.cart_url;
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred. Please try again.');
+        });
+      });
+    }
+  });
+</script>
+

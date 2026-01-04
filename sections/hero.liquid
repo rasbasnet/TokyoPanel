@@ -1,0 +1,46 @@
+<section class="hero">
+  <div class="hero-content">
+    <h1 class="hero-title">{{ section.settings.hero_title | default: 'TOKYO PANEL' }}</h1>
+    <p class="hero-slogan">{{ section.settings.hero_slogan | default: 'Wearable Manga Panels' }}</p>
+    <a href="{{ section.settings.cta_link | default: routes.collections_url }}" class="cta-button">
+      {{ section.settings.cta_text | default: 'Shop Now' }}
+    </a>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Hero",
+  "settings": [
+    {
+      "type": "text",
+      "id": "hero_title",
+      "label": "Hero Title",
+      "default": "TOKYO PANEL"
+    },
+    {
+      "type": "text",
+      "id": "hero_slogan",
+      "label": "Hero Slogan",
+      "default": "Wearable Manga Panels"
+    },
+    {
+      "type": "text",
+      "id": "cta_text",
+      "label": "CTA Button Text",
+      "default": "Shop Now"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "CTA Button Link"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero"
+    }
+  ]
+}
+{% endschema %}
+

@@ -1,0 +1,33 @@
+<header class="header">
+  <div class="header-wrapper">
+    <a href="{{ routes.root_url }}" class="logo">
+      {{ settings.logo_text | default: 'TOKYO PANEL' }}
+    </a>
+    
+    <nav>
+      <ul class="nav-menu">
+        <li><a href="{{ routes.root_url }}" class="nav-link">Home</a></li>
+        <li><a href="{{ routes.collections_url }}" class="nav-link">Catalogue</a></li>
+        <li><a href="{{ pages['about-us'].url }}" class="nav-link">About</a></li>
+        <li><a href="{{ pages['contact'].url }}" class="nav-link">Contact</a></li>
+        <li>
+          <a href="{{ routes.cart_url }}" class="nav-link">
+            Cart
+            {%- if cart.item_count > 0 -%}
+              <span class="cart-count">({{ cart.item_count }})</span>
+            {%- endif -%}
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .cart-count {
+    margin-left: 0.5rem;
+    color: var(--glow-primary);
+    text-shadow: 0 0 10px var(--glow-primary);
+  }
+</style>
+

@@ -1,0 +1,39 @@
+{% comment %}
+  Collection/Catalogue page template
+{% endcomment %}
+
+<section class="page-section">
+  <h1 class="section-title">{{ collection.title }}</h1>
+  
+  {%- if collection.description != blank -%}
+    <div class="section-content text-center mb-lg">
+      {{ collection.description }}
+    </div>
+  {%- endif -%}
+  
+  <div class="product-grid">
+    {%- for product in collection.products -%}
+      <div class="product-card">
+        <a href="{{ product.url }}">
+          {%- if product.featured_image -%}
+            <img 
+              src="{{ product.featured_image | image_url: width: 600 }}"
+              alt="{{ product.featured_image.alt | escape }}"
+              class="product-image"
+              loading="lazy"
+            >
+          {%- else -%}
+            <div class="product-image" style="background-color: var(--bg-primary); display: flex; align-items: center; justify-content: center;">
+              <span>No Image</span>
+            </div>
+          {%- endif -%}
+          <h3 class="product-title">{{ product.title }}</h3>
+          <p class="product-price">{{ product.price | money }}</p>
+        </a>
+      </div>
+    {%- else -%}
+      <p class="text-center">No products found in this collection.</p>
+    {%- endfor -%}
+  </div>
+</section>
+

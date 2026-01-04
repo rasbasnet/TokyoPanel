@@ -1,0 +1,21 @@
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-slogan">
+      {{ settings.footer_slogan | default: 'Wearable Manga Panels' }}
+    </div>
+    
+    <div class="footer-links">
+      <a href="{{ routes.root_url }}" class="footer-link">Home</a>
+      <a href="{{ routes.collections_url }}" class="footer-link">Catalogue</a>
+      <a href="{{ pages['about-us'].url }}" class="footer-link">About</a>
+      <a href="{{ pages['contact'].url }}" class="footer-link">Contact</a>
+      <a href="{{ pages['privacy-policy'].url }}" class="footer-link">Privacy</a>
+      <a href="{{ pages['terms-of-service'].url }}" class="footer-link">Terms</a>
+    </div>
+    
+    <div class="footer-copyright">
+      &copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. All rights reserved.
+    </div>
+  </div>
+</footer>
+

@@ -1,38 +1,32 @@
 {% comment %}
-  Product page template with Shopify integration
+  Product page template with variant image filtering and color swatches
 {% endcomment %}
 
 <div class="product-page">
   <div class="product-detail">
     <div class="product-detail-image-wrapper">
-      {%- if product.featured_image -%}
-        <img 
-          src="{{ product.featured_image | image_url: width: 1200 }}"
-          alt="{{ product.featured_image.alt | escape }}"
-          class="product-detail-image"
-          id="ProductImage"
-        >
-      {%- endif -%}
+      <div class="product-main-image-container" id="product-main-image-container">
+        {%- if product.featured_image -%}
+          <img 
+            src="{{ product.featured_image | image_url: width: 1200 }}"
+            alt="{{ product.featured_image.alt | escape }}"
+            class="product-detail-image"
+            id="ProductImage"
+          >
+        {%- endif -%}
+      </div>
       
-      {%- if product.images.size > 1 -%}
-        <div class="product-thumbnails" style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
-          {%- for image in product.images -%}
-            <img 
-              src="{{ image | image_url: width: 150 }}"
-              alt="{{ image.alt | escape }}"
-              class="product-thumbnail"
-              style="width: 100px; height: 100px; object-fit: cover; border: 2px solid var(--border-glow); cursor: pointer; transition: all 0.3s ease;"
-              onclick="changeProductImage('{{ image | image_url: width: 1200 }}')"
-              onmouseover="this.style.borderColor='var(--glow-primary)'; this.style.boxShadow='0 0 10px var(--accent-glow)'"
-              onmouseout="this.style.borderColor='var(--border-glow)'; this.style.boxShadow='none'"
-            >
-          {%- endfor -%}
-        </div>
-      {%- endif -%}
+      <div class="product-thumbnails" id="product-thumbnails" style="display: flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap;">
+        {%- comment -%} Thumbnails will be populated by JavaScript based on selected variant {%- endcomment -%}
+      </div>
     </div>
     
     <div class="product-detail-info">
       <h1 class="product-detail-title">{{ product.title }}</h1>
+      
+      <div class="product-price-display" id="product-price">
+        <span class="product-detail-price">{{ product.selected_or_first_available_variant.price | money }}</span>
+      </div>
       
       {%- if product.description != blank -%}
         <div class="product-description">
@@ -45,27 +39,50 @@
         
         {%- unless product.has_only_default_variant -%}
           {%- for option in product.options_with_values -%}
-            <div class="variant-selector">
-              <label class="variant-label" for="Option-{{ forloop.index }}">
-                {{ option.name }}
-              </label>
-              <select 
-                id="Option-{{ forloop.index }}"
-                class="variant-select"
-                data-option-index="{{ forloop.index0 }}"
-                onchange="updateVariantSelection()"
-              >
-                {%- for value in option.values -%}
-                  <option value="{{ value | escape }}" {% if option.selected_value == value %}selected{% endif %}>
-                    {{ value }}
-                  </option>
-                {%- endfor -%}
-              </select>
-            </div>
+            {%- assign option_name_lower = option.name | downcase -%}
+            {%- if option_name_lower == 'color' or option_name_lower == 'colour' -%}
+              <div class="variant-selector">
+                <label class="variant-label">{{ option.name }}</label>
+                <div class="color-swatches" data-option-index="{{ forloop.index0 }}">
+                  {%- for value in option.values -%}
+                    {%- assign color_value_lower = value | downcase -%}
+                    {%- assign is_dark_heather = false -%}
+                    {%- if color_value_lower contains 'dark' and color_value_lower contains 'heather' -%}
+                      {%- assign is_dark_heather = true -%}
+                    {%- endif -%}
+                    <button 
+                      type="button"
+                      class="color-swatch {% if is_dark_heather %}active{% endif %}"
+                      data-value="{{ value | escape }}"
+                      data-option-index="{{ forloop.index0 }}"
+                      onclick="selectColorSwatch(this, '{{ value | escape }}', {{ forloop.index0 }})"
+                      style="--swatch-color: {% if value == 'Dark Heather' %}#4a4a4a{% elsif value == 'Black' %}#000000{% elsif value == 'White' %}#ffffff{% elsif value == 'Navy' %}#001f3f{% elsif value == 'Red' %}#ff0000{% elsif value == 'Blue' %}#0066ff{% else %}#808080{% endif %};"
+                    >
+                      <span class="swatch-color"></span>
+                      <span class="swatch-label">{{ value }}</span>
+                    </button>
+                  {%- endfor -%}
+                </div>
+              </div>
+            {%- else -%}
+              <div class="variant-selector">
+                <label class="variant-label" for="Option-{{ forloop.index }}">{{ option.name }}</label>
+                <select 
+                  id="Option-{{ forloop.index }}"
+                  class="variant-select"
+                  data-option-index="{{ forloop.index0 }}"
+                  onchange="updateVariantSelection()"
+                >
+                  {%- for value in option.values -%}
+                    <option value="{{ value | escape }}">{{ value }}</option>
+                  {%- endfor -%}
+                </select>
+              </div>
+            {%- endif -%}
           {%- endfor -%}
         {%- endunless -%}
         
-        <div class="quantity-selector" style="margin-bottom: 1rem;">
+        <div class="quantity-selector">
           <label class="variant-label" for="Quantity">Quantity</label>
           <input 
             type="number" 
@@ -74,12 +91,7 @@
             value="1" 
             min="1"
             class="form-input"
-            style="max-width: 100px;"
           >
-        </div>
-        
-        <div class="product-price-display" id="product-price" style="margin-bottom: 1rem;">
-          <span class="product-detail-price">{{ product.selected_or_first_available_variant.price | money }}</span>
         </div>
         
         <button 
@@ -95,45 +107,153 @@
           {%- endif -%}
         </button>
       </form>
-      
-      <script>
-        const productVariants = [
-          {%- for variant in product.variants -%}
-            {
-              id: {{ variant.id }},
-              title: {{ variant.title | json }},
-              price: {{ variant.price }},
-              available: {{ variant.available | json }},
-              option1: {{ variant.option1 | json }},
-              option2: {{ variant.option2 | json }},
-              option3: {{ variant.option3 | json }}
-            }{% unless forloop.last %},{% endunless %}
-          {%- endfor -%}
-        ];
-      </script>
     </div>
   </div>
 </div>
 
 <script>
+  // Product data
+  const productData = {
+    variants: [
+      {%- for variant in product.variants -%}
+        {
+          id: {{ variant.id }},
+          title: {{ variant.title | json }},
+          price: {{ variant.price }},
+          available: {{ variant.available | json }},
+          option1: {{ variant.option1 | json }},
+          option2: {{ variant.option2 | json }},
+          option3: {{ variant.option3 | json }},
+          featured_image: {{ variant.featured_image | json }},
+          image: {{ variant.image | json }}
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ],
+    images: [
+      {%- for image in product.images -%}
+        {
+          id: {{ image.id }},
+          src: {{ image | image_url: width: 1200 | json }},
+          thumb: {{ image | image_url: width: 150 | json }},
+          alt: {{ image.alt | json }},
+          variant_ids: {{ image.variant_ids | json }}
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  };
+
+  // Find Dark Heather variant
+  function findDarkHeatherVariant() {
+    return productData.variants.find(variant => {
+      const option1 = (variant.option1 || '').toLowerCase();
+      const option2 = (variant.option2 || '').toLowerCase();
+      const option3 = (variant.option3 || '').toLowerCase();
+      return (option1.includes('dark') && option1.includes('heather')) ||
+             (option2.includes('dark') && option2.includes('heather')) ||
+             (option3.includes('dark') && option3.includes('heather'));
+    });
+  }
+
+  // Get images for a specific variant
+  function getVariantImages(variantId) {
+    if (!variantId) return productData.images;
+    
+    // Find images associated with this variant
+    const variantImages = productData.images.filter(image => {
+      return image.variant_ids && image.variant_ids.includes(variantId);
+    });
+    
+    // If variant has specific images, return those; otherwise return all images
+    return variantImages.length > 0 ? variantImages : productData.images;
+  }
+
+  // Update product images based on selected variant
+  function updateProductImages(variantId) {
+    const images = getVariantImages(variantId);
+    const mainImageContainer = document.getElementById('product-main-image-container');
+    const thumbnailsContainer = document.getElementById('product-thumbnails');
+    
+    if (images.length === 0) return;
+    
+    // Update main image
+    const mainImage = document.getElementById('ProductImage');
+    if (mainImage && images[0]) {
+      mainImage.src = images[0].src;
+      mainImage.alt = images[0].alt || '';
+    } else if (!mainImage && images[0] && mainImageContainer) {
+      mainImageContainer.innerHTML = `<img src="${images[0].src}" alt="${images[0].alt || ''}" class="product-detail-image" id="ProductImage">`;
+    }
+    
+    // Update thumbnails
+    if (thumbnailsContainer) {
+      thumbnailsContainer.innerHTML = '';
+      images.forEach((image, index) => {
+        const thumb = document.createElement('img');
+        thumb.src = image.thumb;
+        thumb.alt = image.alt || '';
+        thumb.className = 'product-thumbnail';
+        thumb.style.cssText = 'width: 100px; height: 100px; object-fit: cover; border: 2px solid var(--border-secondary); cursor: pointer; transition: all var(--transition-base); background: var(--bg-primary);';
+        thumb.onclick = () => changeProductImage(image.src);
+        thumb.onmouseover = function() {
+          this.style.borderColor = 'var(--glow-primary)';
+          this.style.boxShadow = '0 0 15px var(--glow-accent)';
+        };
+        thumb.onmouseout = function() {
+          this.style.borderColor = 'var(--border-secondary)';
+          this.style.boxShadow = 'none';
+        };
+        thumbnailsContainer.appendChild(thumb);
+      });
+    }
+  }
+
+  // Select color swatch
+  function selectColorSwatch(button, value, optionIndex) {
+    // Remove active class from all swatches in this group
+    const swatchGroup = button.closest('.color-swatches');
+    swatchGroup.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.classList.remove('active');
+    });
+    
+    // Add active class to clicked swatch
+    button.classList.add('active');
+    
+    // Update variant selection
+    updateVariantSelection();
+  }
+
+  // Change product image
   function changeProductImage(imageUrl) {
     const productImage = document.getElementById('ProductImage');
     if (productImage) {
-      productImage.src = imageUrl;
+      productImage.style.opacity = '0';
+      setTimeout(() => {
+        productImage.src = imageUrl;
+        productImage.style.opacity = '1';
+      }, 200);
     }
   }
-  
+
+  // Update variant selection
   function updateVariantSelection() {
     const selects = document.querySelectorAll('.variant-select');
+    const activeSwatches = document.querySelectorAll('.color-swatch.active');
     const selectedOptions = {};
     
+    // Get selected color from swatches
+    activeSwatches.forEach(swatch => {
+      const optionIndex = parseInt(swatch.dataset.optionIndex);
+      selectedOptions[`option${optionIndex + 1}`] = swatch.dataset.value;
+    });
+    
+    // Get selected values from dropdowns
     selects.forEach(select => {
-      const optionIndex = select.dataset.optionIndex;
-      selectedOptions[`option${parseInt(optionIndex) + 1}`] = select.value;
+      const optionIndex = parseInt(select.dataset.optionIndex);
+      selectedOptions[`option${optionIndex + 1}`] = select.value;
     });
     
     // Find matching variant
-    const selectedVariant = productVariants.find(variant => {
+    const selectedVariant = productData.variants.find(variant => {
       return (
         (!selectedOptions.option1 || variant.option1 === selectedOptions.option1) &&
         (!selectedOptions.option2 || variant.option2 === selectedOptions.option2) &&
@@ -143,9 +263,10 @@
     
     if (selectedVariant) {
       document.getElementById('product-variant-id').value = selectedVariant.id;
+      
+      // Update price
       const priceElement = document.querySelector('#product-price .product-detail-price');
       if (priceElement) {
-        // Use Shopify's money format if available, otherwise format manually
         const formattedPrice = new Intl.NumberFormat('en-US', {
           style: 'currency',
           currency: 'USD'
@@ -153,6 +274,7 @@
         priceElement.textContent = formattedPrice;
       }
       
+      // Update add to cart button
       const addToCartBtn = document.getElementById('AddToCart');
       if (addToCartBtn) {
         if (selectedVariant.available) {
@@ -163,10 +285,61 @@
           addToCartBtn.textContent = 'Sold Out';
         }
       }
+      
+      // Update images
+      updateProductImages(selectedVariant.id);
     }
   }
-  
+
+  // Initialize on page load
   document.addEventListener('DOMContentLoaded', function() {
+    // Set Dark Heather as default
+    const darkHeatherVariant = findDarkHeatherVariant();
+    if (darkHeatherVariant) {
+      // Set the variant ID
+      document.getElementById('product-variant-id').value = darkHeatherVariant.id;
+      
+      // Update selects to match Dark Heather
+      const selects = document.querySelectorAll('.variant-select');
+      selects.forEach(select => {
+        const optionIndex = parseInt(select.dataset.optionIndex);
+        let optionValue = '';
+        if (optionIndex === 0) optionValue = darkHeatherVariant.option1;
+        else if (optionIndex === 1) optionValue = darkHeatherVariant.option2;
+        else if (optionIndex === 2) optionValue = darkHeatherVariant.option3;
+        
+        if (optionValue) {
+          select.value = optionValue;
+        }
+      });
+      
+      // Activate Dark Heather color swatch
+      const darkHeatherSwatch = document.querySelector('.color-swatch[data-value*="Dark Heather" i], .color-swatch[data-value*="dark heather" i]');
+      if (darkHeatherSwatch) {
+        darkHeatherSwatch.classList.add('active');
+      }
+      
+      // Update images to show Dark Heather images
+      updateProductImages(darkHeatherVariant.id);
+      
+      // Update price
+      const priceElement = document.querySelector('#product-price .product-detail-price');
+      if (priceElement) {
+        const formattedPrice = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD'
+        }).format(darkHeatherVariant.price / 100);
+        priceElement.textContent = formattedPrice;
+      }
+    } else {
+      // Fallback: use first available variant
+      const firstVariant = productData.variants[0];
+      if (firstVariant) {
+        updateProductImages(firstVariant.id);
+      }
+    }
+    
+    // Set up form submission
     const productForm = document.getElementById('product-form');
     if (productForm) {
       productForm.addEventListener('submit', function(e) {
@@ -176,11 +349,9 @@
         const quantity = parseInt(document.getElementById('Quantity').value) || 1;
         const addToCartBtn = document.getElementById('AddToCart');
         
-        // Disable button during submission
         addToCartBtn.disabled = true;
         addToCartBtn.textContent = 'Adding...';
         
-        // Use cart manager if available, otherwise use fetch
         if (window.cartManager) {
           window.cartManager.addToCart(variantId, quantity)
             .then(() => {
@@ -195,7 +366,6 @@
               addToCartBtn.disabled = false;
             });
         } else {
-          // Fallback to direct fetch
           const formData = new FormData(this);
           
           fetch(window.routes.cart_add_url, {
@@ -213,7 +383,6 @@
               if (typeof showCartNotification === 'function') {
                 showCartNotification('Item added to cart!');
               }
-              // Dispatch cart update event
               document.dispatchEvent(new CustomEvent('cart:updated'));
               setTimeout(() => {
                 addToCartBtn.textContent = 'Add to Cart';
@@ -233,3 +402,12 @@
   });
 </script>
 
+<style>
+  .product-detail-image {
+    transition: opacity var(--transition-base);
+  }
+  
+  .product-main-image-container {
+    position: relative;
+  }
+</style>

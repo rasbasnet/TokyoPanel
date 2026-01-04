@@ -88,12 +88,48 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   });
 });
 
-// Add glow effect on scroll
+// Enhanced scroll effects
 window.addEventListener('scroll', function() {
   const scrolled = window.pageYOffset;
   const hero = document.querySelector('.hero');
   if (hero) {
-    hero.style.transform = `translateY(${scrolled * 0.5}px)`;
+    hero.style.transform = `translateY(${scrolled * 0.3}px)`;
+    hero.style.opacity = Math.max(0, 1 - scrolled / 500);
   }
+  
+  // Parallax effect for product cards
+  document.querySelectorAll('.product-card').forEach((card, index) => {
+    const rect = card.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      const offset = (rect.top - window.innerHeight / 2) * 0.1;
+      card.style.transform = `translateY(${offset}px)`;
+    }
+  });
+});
+
+// Intersection Observer for fade-in animations
+const observerOptions = {
+  threshold: 0.1,
+  rootMargin: '0px 0px -50px 0px'
+};
+
+const fadeInObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, observerOptions);
+
+// Observe elements for fade-in
+document.addEventListener('DOMContentLoaded', function() {
+  const elementsToAnimate = document.querySelectorAll('.product-card, .about-card, .section-title');
+  elementsToAnimate.forEach((el, index) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+    fadeInObserver.observe(el);
+  });
 });
 

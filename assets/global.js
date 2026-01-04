@@ -1,38 +1,78 @@
 // Tokyo Panel - Global JavaScript
 
 // Cart functionality
-class CartDrawer {
+class CartManager {
   constructor() {
     this.init();
   }
 
   init() {
-    // Initialize cart drawer if needed
-    console.log('Cart drawer initialized');
-  }
-}
-
-// Product form handling
-document.addEventListener('DOMContentLoaded', function() {
-  // Handle variant selection
-  const variantSelects = document.querySelectorAll('.variant-select');
-  variantSelects.forEach(select => {
-    select.addEventListener('change', function() {
-      updateVariantPrice(this.value);
+    this.updateCartCount();
+    // Listen for cart updates
+    document.addEventListener('cart:updated', () => {
+      this.updateCartCount();
     });
-  });
-
-  // Initialize cart drawer
-  if (typeof CartDrawer !== 'undefined') {
-    new CartDrawer();
   }
-});
 
-function updateVariantPrice(variantId) {
-  // This would typically fetch variant data from Shopify
-  // For now, it's a placeholder
-  console.log('Variant changed:', variantId);
+  async updateCartCount() {
+    try {
+      const response = await fetch(window.routes.cart_url + '.js');
+      const cart = await response.json();
+      const cartCountElements = document.querySelectorAll('.cart-count');
+      cartCountElements.forEach(el => {
+        if (cart.item_count > 0) {
+          el.textContent = `(${cart.item_count})`;
+          el.style.display = 'inline';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+    } catch (error) {
+      console.error('Error updating cart count:', error);
+    }
+  }
+
+  async addToCart(variantId, quantity = 1) {
+    try {
+      const formData = new FormData();
+      formData.append('id', variantId);
+      formData.append('quantity', quantity);
+
+      const response = await fetch(window.routes.cart_add_url, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Dispatch cart update event
+      document.dispatchEvent(new CustomEvent('cart:updated'));
+      
+      // Show notification
+      if (typeof showCartNotification === 'function') {
+        showCartNotification('Item added to cart!');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert(error.message || 'An error occurred. Please try again.');
+      throw error;
+    }
+  }
 }
+
+// Initialize cart manager
+let cartManager;
+document.addEventListener('DOMContentLoaded', function() {
+  cartManager = new CartManager();
+  // Make cart manager globally accessible
+  window.cartManager = cartManager;
+});
 
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {

@@ -2,16 +2,29 @@
   Cart notification snippet
 {%- endcomment -%}
 
-<div id="cart-notification" class="cart-notification" style="display: none; position: fixed; top: 20px; right: 20px; background-color: var(--bg-secondary); border: 2px solid var(--glow-primary); padding: 1.5rem; box-shadow: 0 0 20px var(--accent-glow); z-index: 9999; max-width: 400px;">
+<div id="cart-notification" class="cart-notification" style="display: none; position: fixed; top: 20px; right: 20px; background-color: var(--bg-secondary); border: 2px solid var(--glow-primary); padding: 1.5rem; box-shadow: 0 0 30px var(--glow-primary), 0 0 60px var(--accent-glow); z-index: 9999; max-width: 400px; animation: slideInRight 0.5s ease-out;">
   <div class="cart-notification-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h3 style="font-family: var(--font-manga); text-transform: uppercase; margin: 0;">Item Added</h3>
-    <button onclick="closeCartNotification()" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer; text-shadow: 0 0 10px var(--glow-primary);">&times;</button>
+    <h3 style="font-family: var(--font-manga); text-transform: uppercase; margin: 0; text-shadow: 0 0 10px var(--glow-primary);">Item Added</h3>
+    <button onclick="closeCartNotification()" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer; text-shadow: 0 0 10px var(--glow-primary); transition: all 0.3s ease; padding: 0.5rem; line-height: 1;" onmouseover="this.style.transform='scale(1.2)'; this.style.textShadow='0 0 15px var(--glow-primary)'" onmouseout="this.style.transform='scale(1)'; this.style.textShadow='0 0 10px var(--glow-primary)'">&times;</button>
   </div>
   <div class="cart-notification-content">
-    <p id="cart-notification-message"></p>
+    <p id="cart-notification-message" style="margin-bottom: 1rem; color: var(--text-secondary);"></p>
     <a href="{{ routes.cart_url }}" class="cta-button" style="display: block; text-align: center; margin-top: 1rem;">View Cart</a>
   </div>
 </div>
+
+<style>
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+</style>
 
 <script>
   function showCartNotification(message) {
@@ -20,6 +33,7 @@
     if (notification && messageEl) {
       messageEl.textContent = message;
       notification.style.display = 'block';
+      notification.style.animation = 'slideInRight 0.5s ease-out';
       setTimeout(closeCartNotification, 5000);
     }
   }
@@ -27,7 +41,10 @@
   function closeCartNotification() {
     const notification = document.getElementById('cart-notification');
     if (notification) {
-      notification.style.display = 'none';
+      notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 300);
     }
   }
 </script>

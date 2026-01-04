@@ -145,10 +145,12 @@
       document.getElementById('product-variant-id').value = selectedVariant.id;
       const priceElement = document.querySelector('#product-price .product-detail-price');
       if (priceElement) {
-        priceElement.textContent = new Intl.NumberFormat('en-US', {
+        // Use Shopify's money format if available, otherwise format manually
+        const formattedPrice = new Intl.NumberFormat('en-US', {
           style: 'currency',
           currency: 'USD'
         }).format(selectedVariant.price / 100);
+        priceElement.textContent = formattedPrice;
       }
       
       const addToCartBtn = document.getElementById('AddToCart');
@@ -169,28 +171,63 @@
     if (productForm) {
       productForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const formData = new FormData(this);
         
-        fetch(window.routes.cart_add_url, {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            alert(data.error);
-          } else {
-            if (typeof showCartNotification === 'function') {
-              showCartNotification('Item added to cart!');
+        const variantId = document.getElementById('product-variant-id').value;
+        const quantity = parseInt(document.getElementById('Quantity').value) || 1;
+        const addToCartBtn = document.getElementById('AddToCart');
+        
+        // Disable button during submission
+        addToCartBtn.disabled = true;
+        addToCartBtn.textContent = 'Adding...';
+        
+        // Use cart manager if available, otherwise use fetch
+        if (window.cartManager) {
+          window.cartManager.addToCart(variantId, quantity)
+            .then(() => {
+              addToCartBtn.textContent = 'Added!';
+              setTimeout(() => {
+                addToCartBtn.textContent = 'Add to Cart';
+                addToCartBtn.disabled = false;
+              }, 2000);
+            })
+            .catch(() => {
+              addToCartBtn.textContent = 'Add to Cart';
+              addToCartBtn.disabled = false;
+            });
+        } else {
+          // Fallback to direct fetch
+          const formData = new FormData(this);
+          
+          fetch(window.routes.cart_add_url, {
+            method: 'POST',
+            body: formData
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              alert(data.error);
+              addToCartBtn.disabled = false;
+              addToCartBtn.textContent = 'Add to Cart';
+            } else {
+              addToCartBtn.textContent = 'Added!';
+              if (typeof showCartNotification === 'function') {
+                showCartNotification('Item added to cart!');
+              }
+              // Dispatch cart update event
+              document.dispatchEvent(new CustomEvent('cart:updated'));
+              setTimeout(() => {
+                addToCartBtn.textContent = 'Add to Cart';
+                addToCartBtn.disabled = false;
+              }, 2000);
             }
-            // Optionally redirect to cart
-            // window.location.href = window.routes.cart_url;
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert('An error occurred. Please try again.');
-        });
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            addToCartBtn.disabled = false;
+            addToCartBtn.textContent = 'Add to Cart';
+          });
+        }
       });
     }
   });

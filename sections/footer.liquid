@@ -7,10 +7,18 @@
     <div class="footer-links">
       <a href="{{ routes.root_url }}" class="footer-link">Home</a>
       <a href="{{ routes.collections_url }}" class="footer-link">Catalogue</a>
-      <a href="{{ pages['about-us'].url }}" class="footer-link">About</a>
-      <a href="{{ pages['contact'].url }}" class="footer-link">Contact</a>
-      <a href="{{ pages['privacy-policy'].url }}" class="footer-link">Privacy</a>
-      <a href="{{ pages['terms-of-service'].url }}" class="footer-link">Terms</a>
+      {%- if pages['about-us'] -%}
+        <a href="{{ pages['about-us'].url }}" class="footer-link">About</a>
+      {%- endif -%}
+      {%- if pages['contact'] -%}
+        <a href="{{ pages['contact'].url }}" class="footer-link">Contact</a>
+      {%- endif -%}
+      {%- if pages['privacy-policy'] -%}
+        <a href="{{ pages['privacy-policy'].url }}" class="footer-link">Privacy</a>
+      {%- endif -%}
+      {%- if pages['terms-of-service'] -%}
+        <a href="{{ pages['terms-of-service'].url }}" class="footer-link">Terms</a>
+      {%- endif -%}
     </div>
     
     <div class="footer-copyright">

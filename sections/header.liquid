@@ -8,8 +8,12 @@
       <ul class="nav-menu">
         <li><a href="{{ routes.root_url }}" class="nav-link">Home</a></li>
         <li><a href="{{ routes.collections_url }}" class="nav-link">Catalogue</a></li>
-        <li><a href="{{ pages['about-us'].url }}" class="nav-link">About</a></li>
-        <li><a href="{{ pages['contact'].url }}" class="nav-link">Contact</a></li>
+        {%- if pages['about-us'] -%}
+          <li><a href="{{ pages['about-us'].url }}" class="nav-link">About</a></li>
+        {%- endif -%}
+        {%- if pages['contact'] -%}
+          <li><a href="{{ pages['contact'].url }}" class="nav-link">Contact</a></li>
+        {%- endif -%}
         <li>
           <a href="{{ routes.cart_url }}" class="nav-link">
             Cart
